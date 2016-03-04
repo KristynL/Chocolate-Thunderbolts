@@ -135,6 +135,7 @@ waitms(Period/4);
 V1rms = V1/sqrt(2);
 V0rms = V0/sqrt(2);
 //display V1rms and V0rms
+printf("rms reference voltage = %.3f,\n, rms input voltage = %.3f," V0rms, V1rms);
 ///convert time diff between the zero cross of both signals to degrees and display
 //convert period to frequency and display
 frequency = 2*pi/Period 
