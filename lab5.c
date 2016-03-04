@@ -211,7 +211,9 @@ void main (void)
 	float V1peak;
 	
 	printf("\x1b[2J"); // Clear screen using ANSI escape sequence.
-	
+	PORT_Init();     // Initialize Port I/O
+	SYSCLK_Init ();  // Initialize Oscillator
+	UART0_Init();    // Initialize UART0
 	
 	printf ("ADC/Multiplexer test program\n"
 	        "Apply analog voltages to P2.0, P2.1, P2.2, and P2.3\n"
