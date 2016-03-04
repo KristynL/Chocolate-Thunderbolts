@@ -145,19 +145,73 @@ printf("frequency = %.3f", frequency);
 
 
 
-
 void main (void)
 {
 	float v;
 	unsigned char j;
+	unsigned int Period;
+	unsigned int halfperiod;
+	unsigned int quarterperiod;
+	unsigned int time;
+	unsigned int time0;
+	unsigned int time1;
+	unsigned int timediff;
+	float phase;
 	
 	printf("\x1b[2J"); // Clear screen using ANSI escape sequence.
+	
 	
 	printf ("ADC/Multiplexer test program\n"
 	        "Apply analog voltages to P2.0, P2.1, P2.2, and P2.3\n"
 	        "File: %s\n"
 	        "Compiled: %s, %s\n\n",
 	        __FILE__, __DATE__, __TIME__);
+	        
+	//Measure half period at pin P1.0 using timer 0
+TR0=0; //Stop timer 0
+TMOD=0B_0000_0001; //Set timer 0 as 16-bit timer
+TH0=0; TL0=0; //Reset the timer
+while (P1_0==1); //Wait for the signal to be zero
+while (P1_0==0); //Wait for the signal to be one
+TR0=1; //Start timing
+while (P1_0==1); //Wait for the signal to be zero
+TR0=0; //Stop timer 0
+//[TH0,TL0] is half the period in multiples of 12/CLK, so:
+Period=(TH0*0x100+TL0)*2; //Assume Period is unsigned int 
+time = (overflow_count * 65536.0 + TH0 * 256.0 + TL0) * (12.0 / SYSCLK); 
+
+halfperiod = Period/2;
+quarterperiod = Period/4;
+while (zerocross0==1); //wait for zero cross to hit 0
+waitms(halfperiod);
+waitms(quarterperiod); 
+
+//now want to measure peak voltage of the reference
+
+while (zerocross0==1); //wait for zero cross
+waitms(quarterperiod);
+
+//measure peak voltage of test input
+
+//measure time difference between zero cross of both signals
+
+//while (zerocross0==1);
+//time0 = time;
+//while (zerocross1==1);
+//time1 = time;
+//timediff = time0-time1;
+
+//convert peak ADC values to RMS and display
+V1rms = V1/sqrt(2);
+V0rms = V0/sqrt(2);
+
+//convert time diff between zero cross of both signals to degrees
+phase = timediff*360/Period;
+printf("phase = %0.3f", phase);
+
+//convert period to frequency and display
+frequency = 2*pi/Period 
+printf("frequency = %.3f", frequency);
 
 	// Start the ADC in order to select the first channel.
 	// Since we don't know how the input multiplexer was set up,
@@ -168,6 +222,7 @@ void main (void)
 	while(1)
 	{
 		printf("\x1B[6;1H"); // ANSI escape sequence: move to row 6, column 1
+		//try putting algorithm within while loop here 
 
 		for(j=0; j<NUM_INS; j++)
 		{
