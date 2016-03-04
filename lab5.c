@@ -157,6 +157,8 @@ void main (void)
 	unsigned int time1;
 	unsigned int timediff;
 	float phase;
+	float V0peak;
+	float V1peak;
 	
 	printf("\x1b[2J"); // Clear screen using ANSI escape sequence.
 	
@@ -187,11 +189,100 @@ waitms(halfperiod);
 waitms(quarterperiod); 
 
 //now want to measure peak voltage of the reference
+	for(j=0; j<NUM_INS; j++)
+		{
+			AD0BUSY = 1; // Start ADC 0 conversion to measure previously selected input
+			
+			// Select next channel while ADC0 is busy
+			switch(j)
+			{
+				case 0:
+					AMX0P=LQFP32_MUX_P2_1;
+				break;
+				case 1:
+					AMX0P=LQFP32_MUX_P2_2;
+				break;
+				case 2:
+					AMX0P=LQFP32_MUX_P2_3;
+				break;
+				case 3:
+					AMX0P=LQFP32_MUX_P2_0;
+				break;
+			}
+			
+			while (AD0BUSY); // Wait for conversion to complete
+			v = ((ADC0L+(ADC0H*0x100))*VDD)/1023.0; // Read 0-1023 value in ADC0 and convert to volts
+			
+			// Display measured values
+			switch(j)
+			{
+				case 0:
+					printf("V0=%5.3fV, ", v);
+					V0peak = v;
+				break;
+				case 1:
+					printf("V1=%5.3fV, ", v);
+				break;
+				case 2:
+					printf("V2=%5.3fV, ", v);
+				break;
+				case 3:
+					printf("V3=%5.3fV", v);
+				break;
+			}
+
+		}
+//V0peak = V0;
 
 while (zerocross0==1); //wait for zero cross
 waitms(quarterperiod);
 
 //measure peak voltage of test input
+
+		for(j=0; j<NUM_INS; j++)
+		{
+			AD0BUSY = 1; // Start ADC 0 conversion to measure previously selected input
+			
+			// Select next channel while ADC0 is busy
+			switch(j)
+			{
+				case 0:
+					AMX0P=LQFP32_MUX_P2_1;
+				break;
+				case 1:
+					AMX0P=LQFP32_MUX_P2_2;
+				break;
+				case 2:
+					AMX0P=LQFP32_MUX_P2_3;
+				break;
+				case 3:
+					AMX0P=LQFP32_MUX_P2_0;
+				break;
+			}
+			
+			while (AD0BUSY); // Wait for conversion to complete
+			v = ((ADC0L+(ADC0H*0x100))*VDD)/1023.0; // Read 0-1023 value in ADC0 and convert to volts
+			
+			// Display measured values
+			switch(j)
+			{
+				case 0:
+					printf("V0=%5.3fV, ", v);
+				break;
+				case 1:
+					printf("V1=%5.3fV, ", v);
+					V1peak = v;
+				break;
+				case 2:
+					printf("V2=%5.3fV, ", v);
+				break;
+				case 3:
+					printf("V3=%5.3fV", v);
+				break;
+			}
+
+		}
+//V1peak = V1;
 
 //measure time difference between zero cross of both signals
 
@@ -202,8 +293,8 @@ waitms(quarterperiod);
 //timediff = time0-time1;
 
 //convert peak ADC values to RMS and display
-V1rms = V1/sqrt(2);
-V0rms = V0/sqrt(2);
+V1rms = V1peak/sqrt(2);
+V0rms = V0peak/sqrt(2);
 
 //convert time diff between zero cross of both signals to degrees
 phase = timediff*360/Period;
