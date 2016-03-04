@@ -9,6 +9,8 @@
 #define BAUDRATE 115200L
 #define VDD      3.325 // The measured value of VDD in volts
 #define NUM_INS  4
+#define zerocross0 //reference zero cross
+#define zerocross1
 
 // C8051F381_ADC_multiple_inputs.c:  Shows how to use the 10-bit ADC and the
 // multiplexer.  This program measures the voltages applied to pins P2.0 to P2.3.
