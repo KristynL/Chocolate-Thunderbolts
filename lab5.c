@@ -138,6 +138,8 @@ V0rms = V0/sqrt(2);
 ///convert time diff between the zero cross of both signals to degrees and display
 //convert period to frequency and display
 frequency = 2*pi/Period 
+printf("frequency = %.3f", frequency);
+
 
 
 
