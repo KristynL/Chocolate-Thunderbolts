@@ -339,7 +339,7 @@ void main (void)
 	time0 = time;
 	while (zerocross1==1);
 	time1 = time;
-	timediff = time0-time1;
+	timediff = time1-time0;
 
 
 //5. convert peak ADC values to RMS and display
