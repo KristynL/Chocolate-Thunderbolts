@@ -282,11 +282,6 @@ void main (void)
 	//wait period/4
 	QuarterPeriod = HalfPeriod/2;
 	waitms(QuarterPeriod);
-	
-	time = (overflow_count * 65536.0 + TH0 * 256.0 + TL0) * (12.0 / SYSCLK); 
-
-
-
 	//now want to measure peak voltage of the test
 	while(1)
 	{
@@ -339,15 +334,15 @@ void main (void)
 	 }  
 	
 	//4. measure time difference between zero cross of both signals
-	
+	time = (overflow_count * 65536.0 + TH0 * 256.0 + TL0) * (12.0 / SYSCLK); 
+	while (zerocross0==1);
+	time0 = time;
+	while (zerocross1==1);
+	time1 = time;
+	timediff = time0-time1;
 
-//while (zerocross0==1);
-//time0 = time;
-//while (zerocross1==1);
-//time1 = time;
-//timediff = time0-time1;
 
-//convert peak ADC values to RMS and display
+//5. convert peak ADC values to RMS and display
 V1rms = V1peak/sqrt(2);
 V0rms = V0peak/sqrt(2);
 
