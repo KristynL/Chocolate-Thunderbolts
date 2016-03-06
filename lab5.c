@@ -220,64 +220,14 @@ void main (void)
 	while (refZero==1); //Wait for the signal to be zero
 	//wait period/4
 	QuarterPeriod = HalfPeriod/2;
+	waitms(QuarterPeriod);
 	//measure peak voltage of reference
+	AD0BUSY = 1;
+	while(AD0BUSY);
 	
-	
-	time = (overflow_count * 65536.0 + TH0 * 256.0 + TL0) * (12.0 / SYSCLK); 
-
-	quarterperiod = Period/4;
-	while (zerocross0==1); //wait for zero cross to hit 0
-	waitms(halfperiod);
-	waitms(quarterperiod); 
-
-	//now want to measure peak voltage of the reference
-	for(j=0; j<NUM_INS; j++)
-		{
-			AD0BUSY = 1; // Start ADC 0 conversion to measure previously selected input
-			
-			// Select next channel while ADC0 is busy
-			switch(j)
-			{
-				case 0:
-					AMX0P=LQFP32_MUX_P2_1;
-				break;
-				case 1:
-					AMX0P=LQFP32_MUX_P2_2;
-				break;
-				case 2:
-					AMX0P=LQFP32_MUX_P2_3;
-				break;
-				case 3:
-					AMX0P=LQFP32_MUX_P2_0;
-				break;
-			}
-			
-			while (AD0BUSY); // Wait for conversion to complete
-			v = ((ADC0L+(ADC0H*0x100))*VDD)/1023.0; // Read 0-1023 value in ADC0 and convert to volts
-			
-			// Display measured values
-			switch(j)
-			{
-				case 0:
-					printf("V0=%5.3fV, ", v);
-					V0peak = v;
-				break;
-				case 1:
-					printf("V1=%5.3fV, ", v);
-				break;
-				case 2:
-					printf("V2=%5.3fV, ", v);
-				break;
-				case 3:
-					printf("V3=%5.3fV", v);
-				break;
-			}
-
-		}
-//V0peak = V0;
-
-
-//measure peak voltage of test input
+	while(1)
+	{
+		printf("\x1B[6;1H"); // ANSI escape sequence: move to row 6, column 1
 
 		for(j=0; j<NUM_INS; j++)
 		{
@@ -311,7 +261,6 @@ void main (void)
 				break;
 				case 1:
 					printf("V1=%5.3fV, ", v);
-					V1peak = v;
 				break;
 				case 2:
 					printf("V2=%5.3fV, ", v);
@@ -322,9 +271,75 @@ void main (void)
 			}
 
 		}
-//V1peak = V1;
+		printf("\x1B[K"); // ANSI escape sequence: Clear to end of line
+		waitms(100);  // Wait 100ms before next round of measurements.
+	 }  
+	
+	//3. wait for zero cross of test
+	while (testZero==1); //Wait for the signal to be zero
+	while (testZero==0); //Wait for the signal to be one
+	while (testZero==1); //Wait for the signal to be zero
+	//wait period/4
+	QuarterPeriod = HalfPeriod/2;
+	waitms(QuarterPeriod);
+	
+	time = (overflow_count * 65536.0 + TH0 * 256.0 + TL0) * (12.0 / SYSCLK); 
 
-//measure time difference between zero cross of both signals
+
+
+	//now want to measure peak voltage of the test
+	while(1)
+	{
+		printf("\x1B[6;1H"); // ANSI escape sequence: move to row 6, column 1
+
+		for(j=0; j<NUM_INS; j++)
+		{
+			AD0BUSY = 1; // Start ADC 0 conversion to measure previously selected input
+			
+			// Select next channel while ADC0 is busy
+			switch(j)
+			{
+				case 0:
+					AMX0P=LQFP32_MUX_P2_1;
+				break;
+				case 1:
+					AMX0P=LQFP32_MUX_P2_2;
+				break;
+				case 2:
+					AMX0P=LQFP32_MUX_P2_3;
+				break;
+				case 3:
+					AMX0P=LQFP32_MUX_P2_0;
+				break;
+			}
+			
+			while (AD0BUSY); // Wait for conversion to complete
+			v = ((ADC0L+(ADC0H*0x100))*VDD)/1023.0; // Read 0-1023 value in ADC0 and convert to volts
+			
+			// Display measured values
+			switch(j)
+			{
+				case 0:
+					printf("V0=%5.3fV, ", v);
+				break;
+				case 1:
+					printf("V1=%5.3fV, ", v);
+				break;
+				case 2:
+					printf("V2=%5.3fV, ", v);
+				break;
+				case 3:
+					printf("V3=%5.3fV", v);
+				break;
+			}
+
+		}
+		printf("\x1B[K"); // ANSI escape sequence: Clear to end of line
+		waitms(100);  // Wait 100ms before next round of measurements.
+	 }  
+	
+	//4. measure time difference between zero cross of both signals
+	
 
 //while (zerocross0==1);
 //time0 = time;
