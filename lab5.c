@@ -1,3 +1,10 @@
+
+// C8051F381_ADC_multiple_inputs.c:  Shows how to use the 10-bit ADC and the
+// multiplexer.  This program measures the voltages applied to pins P2.0 to P2.3.
+//
+// (c) 2008-2014, Jesus Calvino-Fraga
+//
+// ~C51~ 
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -34,12 +41,11 @@
 #define FORE_BACK "\x1B[0;3%d;4%dm"
 #define FONT_SELECT "\x1B[%dm"
 
-// C8051F381_ADC_multiple_inputs.c:  Shows how to use the 10-bit ADC and the
-// multiplexer.  This program measures the voltages applied to pins P2.0 to P2.3.
-//
-// (c) 2008-2014, Jesus Calvino-Fraga
-//
-// ~C51~ 
+//define pints
+#define onoff P0_0
+#define refZero P0_1
+#define testZero P0_2
+
 
 char _c51_external_startup (void)
 {
@@ -163,6 +169,13 @@ void waitms (unsigned int ms)
 		for (k=0; k<4; k++) Timer3us(250);
 }
 
+void TIMER0_Init(void)
+{
+	TMOD&=0b_1111_0000; // Set the bits of Timer/Counter 0 to zero
+	TMOD|=0b_0000_0001; // Timer/Counter 0 used as a 16-bit timer
+	TR0=0; // Stop Timer/Counter 0
+}
+
 
 //Measure half period at pin P1.0 using timer 0
 TR0=0; //Stop timer 0
@@ -215,8 +228,8 @@ void main (void)
 	SYSCLK_Init ();  // Initialize Oscillator
 	UART0_Init();    // Initialize UART0
 	
-	printf ("ADC/Multiplexer test program\n"
-	        "Apply analog voltages to P2.0, P2.1, P2.2, and P2.3\n"
+	printf ("Phasor Voltmeter\n"
+	        "Apply zero cross to P0_1, P0_2, P2.2, and P2.3\n"
 	        "File: %s\n"
 	        "Compiled: %s, %s\n\n",
 	        __FILE__, __DATE__, __TIME__);
