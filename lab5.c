@@ -400,5 +400,30 @@ printf("frequency = %.3f", frequency);
 		printf("\x1B[K"); // ANSI escape sequence: Clear to end of line
 		waitms(100);  // Wait 100ms before next round of measurements.
 	 }  
+    printf( CLEAR_SCREEN );
+    printf( FORE_BACK , COLOR_BLACK, COLOR_WHITE );
+
+    printf( "ÉÍÍÍÍÍÍÍÍÍÍÍÍËÍÍÍÍÍÍÍÍÍÍÍÍ»\n" );
+    printf( "º Vrms Ref   º            º\n" );
+    printf( "ÌÍÍÍÍÍÍÍÍÍÍÍÍÎÍÍÍÍÍÍÍÍÍÍÍÍ¹\n" );
+    printf( "º Vrms Test  º            º\n" );
+    printf( "ÌÍÍÍÍÍÍÍÍÍÍÍÍÎÍÍÍÍÍÍÍÍÍÍÍÍ¹\n" );
+    printf( "º Phase      º            º\n" );
+    printf( "ÌÍÍÍÍÍÍÍÍÍÍÍÍÎÍÍÍÍÍÍÍÍÍÍÍÍ¹\n" );
+    printf( "º Frequency  º            º\n" );
+    printf( "ÈÍÍÍÍÍÍÍÍÍÍÍÍÊÍÍÍÍÍÍÍÍÍÍÍÍ¼\n" );
+    
+    printf( GOTO_YX , 2, 18);
+    printf( FORE_BACK , COLOR_RED, COLOR_WHITE );
+    printf("%6.3f", 2.543);
+    printf( GOTO_YX , 4, 18);
+    printf( FORE_BACK , COLOR_GREEN, COLOR_WHITE );
+    printf("%6.3f", 1.191);
+    printf( GOTO_YX , 6, 18);
+    printf( FORE_BACK , COLOR_BLUE, COLOR_WHITE );
+    printf("%7.3f", -47.39);
+    printf( GOTO_YX , 8, 18);
+    printf( FORE_BACK , COLOR_MAGENTA, COLOR_WHITE );
+    printf("%7.3f", 59.44);
 }	
 
