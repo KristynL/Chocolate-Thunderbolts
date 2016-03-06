@@ -62,6 +62,7 @@ char _c51_external_startup (void)
 	#endif
 	OSCICN |= 0x03; // Configure internal oscillator for its maximum frequency
 	
+	//ADC Initialization
 	// Configure P2.0 to P2.3 as analog inputs
 	P2MDIN &= 0b_1111_0000; // P2.0 to P2.3
 	P2SKIP |= 0b_0000_1111; // Skip Crossbar decoding for these pins
@@ -177,19 +178,19 @@ void TIMER0_Init(void)
 }
 
 
-//Measure half period at pin P1.0 using timer 0
+//1. Measure half period of ref signal using timer 0
 TR0=0; //Stop timer 0
 TMOD=0B_0000_0001; //Set timer 0 as 16-bit timer
 TH0=0; TL0=0; //Reset the timer
-while (P1_0==1); //Wait for the signal to be zero
-while (P1_0==0); //Wait for the signal to be one
+while (refZero==1); //Wait for the signal to be zero
+while (refZero==0); //Wait for the signal to be one
 TR0=1; //Start timing
-while (P1_0==1); //Wait for the signal to be zero
+while (refZero==1); //Wait for the signal to be zero
 TR0=0; //Stop timer 0
 //[TH0,TL0] is half the period in multiples of 12/CLK, so:
 Period=(TH0*0x100+TL0)*2; //Assume Period is unsigned int 
 
-//wait for zero cross
+//2. wait for zero cross
 waitms(Period/4);
 //measure peak voltage of reference, V0
 //wait for zero cross
@@ -229,12 +230,12 @@ void main (void)
 	UART0_Init();    // Initialize UART0
 	
 	printf ("Phasor Voltmeter\n"
-	        "Apply zero cross to P0_1, P0_2, P2.2, and P2.3\n"
+	        "Apply zero cross to P0_1, P0_2; Vpeak to P2_1, and P2_2\n"
 	        "File: %s\n"
 	        "Compiled: %s, %s\n\n",
 	        __FILE__, __DATE__, __TIME__);
 	        
-	//Measure half period at pin P1.0 using timer 0
+//Measure half period at pin P1.0 using timer 0
 TR0=0; //Stop timer 0
 TMOD=0B_0000_0001; //Set timer 0 as 16-bit timer
 TH0=0; TL0=0; //Reset the timer
