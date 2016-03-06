@@ -43,8 +43,8 @@
 
 //define pints
 #define onoff P0_0
-#define refZero P0_1
-#define testZero P0_2
+#define refZero P0_1		//pin to input ref zero cross signal
+#define testZero P0_2		//pin to input test zero cross signal
 
 
 char _c51_external_startup (void)
@@ -177,45 +177,12 @@ void TIMER0_Init(void)
 	TR0=0; // Stop Timer/Counter 0
 }
 
-
-//1. Measure half period of ref signal using timer 0
-TR0=0; //Stop timer 0
-TMOD=0B_0000_0001; //Set timer 0 as 16-bit timer
-TH0=0; TL0=0; //Reset the timer
-while (refZero==1); //Wait for the signal to be zero
-while (refZero==0); //Wait for the signal to be one
-TR0=1; //Start timing
-while (refZero==1); //Wait for the signal to be zero
-TR0=0; //Stop timer 0
-//[TH0,TL0] is half the period in multiples of 12/CLK, so:
-Period=(TH0*0x100+TL0)*2; //Assume Period is unsigned int 
-
-//2. wait for zero cross
-waitms(Period/4);
-//measure peak voltage of reference, V0
-//wait for zero cross
-waitms(Period/4);
-//measure peak voltage of other signal, V1
-//measure time difference between zero cross of both signals
-//convert peak ADC values to RMS and display
-V1rms = V1/sqrt(2);
-V0rms = V0/sqrt(2);
-//display V1rms and V0rms
-printf("rms reference voltage = %.3f,\n, rms input voltage = %.3f," V0rms, V1rms);
-///convert time diff between the zero cross of both signals to degrees and display
-//convert period to frequency and display
-frequency = 2*pi/Period 
-printf("frequency = %.3f", frequency);
-
-
-
 void main (void)
 {
 	float v;
 	unsigned char j;
-	unsigned int Period;
-	unsigned int halfperiod;
-	unsigned int quarterperiod;
+	unsigned int HalfPeriod;
+	unsigned int QuarterPeriod;
 	unsigned int time;
 	unsigned int time0;
 	unsigned int time1;
@@ -235,26 +202,35 @@ void main (void)
 	        "Compiled: %s, %s\n\n",
 	        __FILE__, __DATE__, __TIME__);
 	        
-//Measure half period at pin P1.0 using timer 0
-TR0=0; //Stop timer 0
-TMOD=0B_0000_0001; //Set timer 0 as 16-bit timer
-TH0=0; TL0=0; //Reset the timer
-while (P1_0==1); //Wait for the signal to be zero
-while (P1_0==0); //Wait for the signal to be one
-TR0=1; //Start timing
-while (P1_0==1); //Wait for the signal to be zero
-TR0=0; //Stop timer 0
-//[TH0,TL0] is half the period in multiples of 12/CLK, so:
-Period=(TH0*0x100+TL0)*2; //Assume Period is unsigned int 
-time = (overflow_count * 65536.0 + TH0 * 256.0 + TL0) * (12.0 / SYSCLK); 
+	//1. Measure half period of ref signal using timer 0
+	TR0=0; //Stop timer 0
+	TMOD=0B_0000_0001; //Set timer 0 as 16-bit timer
+	TH0=0; TL0=0; //Reset the timer
+	while (refZero==1); //Wait for the signal to be zero
+	while (refZero==0); //Wait for the signal to be one
+	TR0=1; //Start timing
+	while (refZero==1); //Wait for the signal to be zero
+	TR0=0; //Stop timer 0
+	//[TH0,TL0] is half the period in multiples of 12/CLK, so:
+	HalfPeriod=(TH0*0x100+TL0)*2; //Assume Period is unsigned int 
+	
+	//2. wait for zero cross of ref
+	while (refZero==1); //Wait for the signal to be zero
+	while (refZero==0); //Wait for the signal to be one
+	while (refZero==1); //Wait for the signal to be zero
+	//wait period/4
+	QuarterPeriod = HalfPeriod/2;
+	//measure peak voltage of reference
+	
+	
+	time = (overflow_count * 65536.0 + TH0 * 256.0 + TL0) * (12.0 / SYSCLK); 
 
-halfperiod = Period/2;
-quarterperiod = Period/4;
-while (zerocross0==1); //wait for zero cross to hit 0
-waitms(halfperiod);
-waitms(quarterperiod); 
+	quarterperiod = Period/4;
+	while (zerocross0==1); //wait for zero cross to hit 0
+	waitms(halfperiod);
+	waitms(quarterperiod); 
 
-//now want to measure peak voltage of the reference
+	//now want to measure peak voltage of the reference
 	for(j=0; j<NUM_INS; j++)
 		{
 			AD0BUSY = 1; // Start ADC 0 conversion to measure previously selected input
@@ -300,8 +276,6 @@ waitms(quarterperiod);
 		}
 //V0peak = V0;
 
-while (zerocross0==1); //wait for zero cross
-waitms(quarterperiod);
 
 //measure peak voltage of test input
 
