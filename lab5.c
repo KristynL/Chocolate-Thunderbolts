@@ -40,9 +40,9 @@
 #define FONT_SELECT "\x1B[%dm"
 
 //define pins
-#define onoff P0_0
+//#define onoff P0_0
 #define refZero P0_1		//pin to input ref zero cross signal
-#define testZero P0_2		//pin to input test zero cross signal
+#define testZero P0_0		//pin to input test zero cross signal
 
 unsigned char overflow_count;
 
