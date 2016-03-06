@@ -430,15 +430,15 @@ printf("frequency = %.3f", frequency);
     
     printf( GOTO_YX , 2, 18);
     printf( FORE_BACK , COLOR_RED, COLOR_WHITE );
-    printf("%6.3f", 2.543);
+    printf("%6.3f", V0rms);
     printf( GOTO_YX , 4, 18);
     printf( FORE_BACK , COLOR_GREEN, COLOR_WHITE );
-    printf("%6.3f", 1.191);
+    printf("%6.3f", V1rms);
     printf( GOTO_YX , 6, 18);
     printf( FORE_BACK , COLOR_BLUE, COLOR_WHITE );
-    printf("%7.3f", -47.39);
+    printf("%7.3f", phase);
     printf( GOTO_YX , 8, 18);
     printf( FORE_BACK , COLOR_MAGENTA, COLOR_WHITE );
-    printf("%7.3f", 59.44);
+    printf("%7.3f", frequency);
 }	
 
