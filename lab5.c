@@ -15,7 +15,7 @@
 #define SYSCLK (24*MHZ)
 #define BAUDRATE 115200L
 #define VDD      3.325 // The measured value of VDD in volts
-#define NUM_INS  4
+#define NUM_INS  2
 
 // ANSI colors
 #define	COLOR_BLACK		0
