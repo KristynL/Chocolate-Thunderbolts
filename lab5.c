@@ -12,7 +12,8 @@
 
 #define pi 3.14
 #define MHZ 1000000L
-#define SYSCLK (24*MHZ)
+#define SYSCLK 48000000L 
+//#define SYSCLK (24*MHZ)
 #define BAUDRATE 115200L
 #define VDD      3.325 // The measured value of VDD in volts
 #define NUM_INS  2
@@ -45,6 +46,7 @@
 #define testZero P0_0		//pin to input test zero cross signal
 
 unsigned char overflow_count;
+
 
 char _c51_external_startup (void)
 {
@@ -179,6 +181,7 @@ void TIMER0_Init(void)
 
 void main (void)
 {
+
 	float v;
 	unsigned char j;
 	unsigned int HalfPeriod;
@@ -195,32 +198,33 @@ void main (void)
 	unsigned int Period;
 	float frequency;
 	
+	
+	printf("\x1b[2J"); // Clear screen using ANSI escape sequence.
+	PCA0MD &= ~0x40; // WDTE = 0 (clear watchdog timer enable)
 	PORT_Init();     // Initialize Port I/O
 	SYSCLK_Init ();  // Initialize Oscillator
 	UART0_Init();    // Initialize UART0
 	TIMER0_Init();
-	
-	printf("\x1b[2J"); // Clear screen using ANSI escape sequence.
 	printf( FORE_BACK , COLOR_BLACK, COLOR_WHITE );
 	printf( CLEAR_SCREEN );
-
+	
 	printf ("Phasor Voltmeter\n"
 	        "Apply zero cross to P0_1, P0_2; Vpeak to P2_1, and P2_2\n"
 	        "File: %s\n"
 	        "Compiled: %s, %s\n\n",
 	        __FILE__, __DATE__, __TIME__);
 	        
-	printf( FORE_BACK, COLOR_BLACK, COLOR_WHITE ); 
-	printf( "ÉÍÍÍÍÍÍÍÍÍÍÍÍËÍÍÍÍÍÍÍÍÍÍÍÍ»\n" ); 
-        printf( "º Vrms Ref   º            º\n" ); 
-        printf( "ÌÍÍÍÍÍÍÍÍÍÍÍÍÎÍÍÍÍÍÍÍÍÍÍÍÍ¹\n" ); 
-        printf( "º Vrms Test  º            º\n" ); 
-        printf( "ÌÍÍÍÍÍÍÍÍÍÍÍÍÎÍÍÍÍÍÍÍÍÍÍÍÍ¹\n" ); 
-        printf( "º Phase      º            º\n" ); 
-        printf( "ÌÍÍÍÍÍÍÍÍÍÍÍÍÎÍÍÍÍÍÍÍÍÍÍÍÍ¹\n" ); 
-        printf( "º Frequency  º            º\n" ); 
-        printf( "ÈÍÍÍÍÍÍÍÍÍÍÍÍÊÍÍÍÍÍÍÍÍÍÍÍÍ¼\n" ); 
-
+	      
+	printf( "ÉÍÍÍÍÍÍÍÍÍÍÍÍËÍÍÍÍÍÍÍÍÍÍÍÍ»\n" );
+    printf( "º Vrms Ref   º            º\n" );
+    printf( "ÌÍÍÍÍÍÍÍÍÍÍÍÍÎÍÍÍÍÍÍÍÍÍÍÍÍ¹\n" );
+    printf( "º Vrms Test  º            º\n" );
+    printf( "ÌÍÍÍÍÍÍÍÍÍÍÍÍÎÍÍÍÍÍÍÍÍÍÍÍÍ¹\n" );
+    printf( "º Phase      º            º\n" );
+    printf( "ÌÍÍÍÍÍÍÍÍÍÍÍÍÎÍÍÍÍÍÍÍÍÍÍÍÍ¹\n" );
+    printf( "º Frequency  º            º\n" );
+    printf( "ÈÍÍÍÍÍÍÍÍÍÍÍÍÊÍÍÍÍÍÍÍÍÍÍÍÍ¼\n" );
+    
 	//1. Measure half period of ref signal using timer 0
 	TR0=0; //Stop timer 0
 	TMOD=0B_0000_0001; //Set timer 0 as 16-bit timer
@@ -233,6 +237,7 @@ void main (void)
 	//[TH0,TL0] is half the period in multiples of 12/CLK, so:
 	HalfPeriod=(TH0*0x100+TL0); //Assume Period is unsigned int 
 	Period=HalfPeriod*2;
+	printf("%f", Period);
 	
 	//2. wait for zero cross of ref
 	while (refZero==1); //Wait for the signal to be zero
@@ -361,25 +366,37 @@ void main (void)
         TR0 = 0; // stop the counter
         time = (overflow_count * 65536.0 + TH0 * 256.0 + TL0) * (12.0 / SYSCLK);
 
-	while (refZero == 1);
-	time0 = time;
-	while (testZero == 1);
-	time1 = time;
-	timediff = time0-time1;
+while (refZero == 1);
+time0 = time;
+while (testZero == 1);
+time1 = time;
+timediff = time0-time1;
 
-	//5. convert peak ADC values to RMS and display
-	V1rms = V1peak/1.41421356;
-	V0rms = V0peak/1.41421356;
+//5. convert peak ADC values to RMS and display
+V1rms = V1peak/1.41421356;
+V0rms = V0peak/1.41421356;
 
-	//6. convert time diff between zero cross of both signals to degrees
-	phase = timediff*360/Period;
-	printf("phase = %0.3f", phase);
+//convert time diff between zero cross of both signals to degrees
+phase = timediff*360/Period;
+printf("phase = %0.3f", phase);
 
- 	//7. convert period to frequency and display
- 	frequency = 1.0/Period;
-	 printf("frequency = %.3f", frequency);
+//convert period to frequency and display
+frequency = 2*pi/Period;
+printf("frequency = %.3f", frequency);
 
-   
+    printf( CLEAR_SCREEN );
+    printf( FORE_BACK , COLOR_BLACK, COLOR_WHITE );
+
+    printf( "ÉÍÍÍÍÍÍÍÍÍÍÍÍËÍÍÍÍÍÍÍÍÍÍÍÍ»\n" );
+    printf( "º Vrms Ref   º            º\n" );
+    printf( "ÌÍÍÍÍÍÍÍÍÍÍÍÍÎÍÍÍÍÍÍÍÍÍÍÍÍ¹\n" );
+    printf( "º Vrms Test  º            º\n" );
+    printf( "ÌÍÍÍÍÍÍÍÍÍÍÍÍÎÍÍÍÍÍÍÍÍÍÍÍÍ¹\n" );
+    printf( "º Phase      º            º\n" );
+    printf( "ÌÍÍÍÍÍÍÍÍÍÍÍÍÎÍÍÍÍÍÍÍÍÍÍÍÍ¹\n" );
+    printf( "º Frequency  º            º\n" );
+    printf( "ÈÍÍÍÍÍÍÍÍÍÍÍÍÊÍÍÍÍÍÍÍÍÍÍÍÍ¼\n" );
+    
     printf( GOTO_YX , 2, 18);
     printf( FORE_BACK , COLOR_RED, COLOR_WHITE );
     printf("%6.3f", V0rms);
@@ -393,4 +410,5 @@ void main (void)
     printf( FORE_BACK , COLOR_MAGENTA, COLOR_WHITE );
     printf("%7.3f", frequency);
 }	
+
 
