@@ -195,41 +195,32 @@ void main (void)
 	unsigned int Period;
 	float frequency;
 	
-	//printf("\x1b[2J"); // Clear screen using ANSI escape sequence.
-	PCA0MD &= ~0x40; // WDTE = 0 (clear watchdog timer enable)
 	PORT_Init();     // Initialize Port I/O
 	SYSCLK_Init ();  // Initialize Oscillator
 	UART0_Init();    // Initialize UART0
 	TIMER0_Init();
+	
+	printf("\x1b[2J"); // Clear screen using ANSI escape sequence.
 	printf( FORE_BACK , COLOR_BLACK, COLOR_WHITE );
 	printf( CLEAR_SCREEN );
-	
-	printf("ÉÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍ»\n");
-	printf("º                                                º\n");
-	printf("º                                                º\n");
-	printf("º                                                º\n");
-	printf("ÈÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍ¼\n");
-	
-	printf( GOTO_YX , 3, 25);
-	printf( FORE_BACK , COLOR_RED, COLOR_WHITE );
-	printf("Hey!");
-	
+
 	printf ("Phasor Voltmeter\n"
 	        "Apply zero cross to P0_1, P0_2; Vpeak to P2_1, and P2_2\n"
 	        "File: %s\n"
 	        "Compiled: %s, %s\n\n",
 	        __FILE__, __DATE__, __TIME__);
 	        
-	printf( "ÉÍÍÍÍÍÍÍÍÍÍÍÍËÍÍÍÍÍÍÍÍÍÍÍÍ»\n" );
-    printf( "º Vrms Ref   º            º\n" );
-    printf( "ÌÍÍÍÍÍÍÍÍÍÍÍÍÎÍÍÍÍÍÍÍÍÍÍÍÍ¹\n" );
-    printf( "º Vrms Test  º            º\n" );
-    printf( "ÌÍÍÍÍÍÍÍÍÍÍÍÍÎÍÍÍÍÍÍÍÍÍÍÍÍ¹\n" );
-    printf( "º Phase      º            º\n" );
-    printf( "ÌÍÍÍÍÍÍÍÍÍÍÍÍÎÍÍÍÍÍÍÍÍÍÍÍÍ¹\n" );
-    printf( "º Frequency  º            º\n" );
-    printf( "ÈÍÍÍÍÍÍÍÍÍÍÍÍÊÍÍÍÍÍÍÍÍÍÍÍÍ¼\n" );
-    
+	printf( FORE_BACK, COLOR_BLACK, COLOR_WHITE ); 
+	printf( "ÉÍÍÍÍÍÍÍÍÍÍÍÍËÍÍÍÍÍÍÍÍÍÍÍÍ»\n" ); 
+        printf( "º Vrms Ref   º            º\n" ); 
+        printf( "ÌÍÍÍÍÍÍÍÍÍÍÍÍÎÍÍÍÍÍÍÍÍÍÍÍÍ¹\n" ); 
+        printf( "º Vrms Test  º            º\n" ); 
+        printf( "ÌÍÍÍÍÍÍÍÍÍÍÍÍÎÍÍÍÍÍÍÍÍÍÍÍÍ¹\n" ); 
+        printf( "º Phase      º            º\n" ); 
+        printf( "ÌÍÍÍÍÍÍÍÍÍÍÍÍÎÍÍÍÍÍÍÍÍÍÍÍÍ¹\n" ); 
+        printf( "º Frequency  º            º\n" ); 
+        printf( "ÈÍÍÍÍÍÍÍÍÍÍÍÍÊÍÍÍÍÍÍÍÍÍÍÍÍ¼\n" ); 
+
 	//1. Measure half period of ref signal using timer 0
 	TR0=0; //Stop timer 0
 	TMOD=0B_0000_0001; //Set timer 0 as 16-bit timer
@@ -264,16 +255,10 @@ void main (void)
 			switch(j)
 			{
 				case 0:
-					AMX0P=LQFP32_MUX_P2_1;
+					AMX0P=LQFP32_MUX_P2_0;
 				break;
 				case 1:
-					AMX0P=LQFP32_MUX_P2_2;
-				break;
-				case 2:
-					AMX0P=LQFP32_MUX_P2_3;
-				break;
-				case 3:
-					AMX0P=LQFP32_MUX_P2_0;
+					AMX0P=LQFP32_MUX_P2_1;
 				break;
 			}
 			
@@ -289,12 +274,6 @@ void main (void)
 				break;
 				case 1:
 					printf("V1=%5.3fV, ", v);
-				break;
-				case 2:
-					printf("V2=%5.3fV, ", v);
-				break;
-				case 3:
-					printf("V3=%5.3fV", v);
 				break;
 			}
 
@@ -319,16 +298,10 @@ void main (void)
 			switch(j)
 			{
 				case 0:
-					AMX0P=LQFP32_MUX_P2_1;
+					AMX0P=LQFP32_MUX_P2_0;
 				break;
 				case 1:
-					AMX0P=LQFP32_MUX_P2_2;
-				break;
-				case 2:
-					AMX0P=LQFP32_MUX_P2_3;
-				break;
-				case 3:
-					AMX0P=LQFP32_MUX_P2_0;
+					AMX0P=LQFP32_MUX_P2_1;
 				break;
 			}
 			
@@ -344,12 +317,6 @@ void main (void)
 				case 1:
 					printf("V1=%5.3fV, ", v);
 					V1peak = v;
-				break;
-				case 2:
-					printf("V2=%5.3fV, ", v);
-				break;
-				case 3:
-					printf("V3=%5.3fV", v);
 				break;
 			}
 
@@ -394,37 +361,25 @@ void main (void)
         TR0 = 0; // stop the counter
         time = (overflow_count * 65536.0 + TH0 * 256.0 + TL0) * (12.0 / SYSCLK);
 
-while (refZero == 1);
-time0 = time;
-while (testZero == 1);
-time1 = time;
-timediff = time0-time1;
+	while (refZero == 1);
+	time0 = time;
+	while (testZero == 1);
+	time1 = time;
+	timediff = time0-time1;
 
-//5. convert peak ADC values to RMS and display
-V1rms = V1peak/1.41421356;
-V0rms = V0peak/1.41421356;
+	//5. convert peak ADC values to RMS and display
+	V1rms = V1peak/1.41421356;
+	V0rms = V0peak/1.41421356;
 
-//convert time diff between zero cross of both signals to degrees
-phase = timediff*360/Period;
-printf("phase = %0.3f", phase);
+	//6. convert time diff between zero cross of both signals to degrees
+	phase = timediff*360/Period;
+	printf("phase = %0.3f", phase);
 
-//convert period to frequency and display
-frequency = 2*pi/Period;
-printf("frequency = %.3f", frequency);
+ 	//7. convert period to frequency and display
+ 	frequency = 1.0/Period;
+	 printf("frequency = %.3f", frequency);
 
-    printf( CLEAR_SCREEN );
-    printf( FORE_BACK , COLOR_BLACK, COLOR_WHITE );
-
-    printf( "ÉÍÍÍÍÍÍÍÍÍÍÍÍËÍÍÍÍÍÍÍÍÍÍÍÍ»\n" );
-    printf( "º Vrms Ref   º            º\n" );
-    printf( "ÌÍÍÍÍÍÍÍÍÍÍÍÍÎÍÍÍÍÍÍÍÍÍÍÍÍ¹\n" );
-    printf( "º Vrms Test  º            º\n" );
-    printf( "ÌÍÍÍÍÍÍÍÍÍÍÍÍÎÍÍÍÍÍÍÍÍÍÍÍÍ¹\n" );
-    printf( "º Phase      º            º\n" );
-    printf( "ÌÍÍÍÍÍÍÍÍÍÍÍÍÎÍÍÍÍÍÍÍÍÍÍÍÍ¹\n" );
-    printf( "º Frequency  º            º\n" );
-    printf( "ÈÍÍÍÍÍÍÍÍÍÍÍÍÊÍÍÍÍÍÍÍÍÍÍÍÍ¼\n" );
-    
+   
     printf( GOTO_YX , 2, 18);
     printf( FORE_BACK , COLOR_RED, COLOR_WHITE );
     printf("%6.3f", V0rms);
