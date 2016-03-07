@@ -46,7 +46,6 @@
 
 unsigned char overflow_count;
 
-
 char _c51_external_startup (void)
 {
 	PCA0MD&=(~0x40) ;    // DISABLE WDT: clear Watchdog Enable bit
@@ -112,6 +111,7 @@ char _c51_external_startup (void)
 	
 	return 0;
 }
+
 
 void PORT_Init (void)
 {
@@ -195,10 +195,24 @@ void main (void)
 	unsigned int Period;
 	float frequency;
 	
-	printf("\x1b[2J"); // Clear screen using ANSI escape sequence.
+	//printf("\x1b[2J"); // Clear screen using ANSI escape sequence.
+	PCA0MD &= ~0x40; // WDTE = 0 (clear watchdog timer enable)
 	PORT_Init();     // Initialize Port I/O
 	SYSCLK_Init ();  // Initialize Oscillator
 	UART0_Init();    // Initialize UART0
+	TIMER0_Init();
+	printf( FORE_BACK , COLOR_BLACK, COLOR_WHITE );
+	printf( CLEAR_SCREEN );
+	
+	printf("ÉÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍ»\n");
+	printf("º                                                º\n");
+	printf("º                                                º\n");
+	printf("º                                                º\n");
+	printf("ÈÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍ¼\n");
+	
+	printf( GOTO_YX , 3, 25);
+	printf( FORE_BACK , COLOR_RED, COLOR_WHITE );
+	printf("Hey!");
 	
 	printf ("Phasor Voltmeter\n"
 	        "Apply zero cross to P0_1, P0_2; Vpeak to P2_1, and P2_2\n"
@@ -206,6 +220,16 @@ void main (void)
 	        "Compiled: %s, %s\n\n",
 	        __FILE__, __DATE__, __TIME__);
 	        
+	printf( "ÉÍÍÍÍÍÍÍÍÍÍÍÍËÍÍÍÍÍÍÍÍÍÍÍÍ»\n" );
+    printf( "º Vrms Ref   º            º\n" );
+    printf( "ÌÍÍÍÍÍÍÍÍÍÍÍÍÎÍÍÍÍÍÍÍÍÍÍÍÍ¹\n" );
+    printf( "º Vrms Test  º            º\n" );
+    printf( "ÌÍÍÍÍÍÍÍÍÍÍÍÍÎÍÍÍÍÍÍÍÍÍÍÍÍ¹\n" );
+    printf( "º Phase      º            º\n" );
+    printf( "ÌÍÍÍÍÍÍÍÍÍÍÍÍÎÍÍÍÍÍÍÍÍÍÍÍÍ¹\n" );
+    printf( "º Frequency  º            º\n" );
+    printf( "ÈÍÍÍÍÍÍÍÍÍÍÍÍÊÍÍÍÍÍÍÍÍÍÍÍÍ¼\n" );
+    
 	//1. Measure half period of ref signal using timer 0
 	TR0=0; //Stop timer 0
 	TMOD=0B_0000_0001; //Set timer 0 as 16-bit timer
