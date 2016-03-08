@@ -15,7 +15,7 @@
 #define SYSCLK 48000000L 
 //#define SYSCLK (24*MHZ)
 #define BAUDRATE 115200L
-#define VDD      3.325 // The measured value of VDD in volts
+#define VDD      5.15   // The measured value of VDD in volts
 #define NUM_INS  2
 
 // ANSI colors
@@ -183,13 +183,15 @@ void main (void)
 {
 
 	float v;
-	unsigned char j;
-//	unsigned int QuarterPeriod;
+	//unsigned char j;
+	float QuarterPeriod;
+	
 	unsigned int time;
 	unsigned int time0;
 	unsigned int time1;
 	unsigned int timediff;
 	float phase;
+	
 	float V0peak = 0;
 	float V1peak = 0;
 	float V0rms;
@@ -209,12 +211,12 @@ void main (void)
 	printf( CLEAR_SCREEN );
 	
 	printf ("Phasor Voltmeter\n"
-	        "Apply zero cross to P0_1, P0_2; Vpeak to P2_1, and P2_2\n"
+	        "Apply zero cross to P0_1, P0_2; Vpeak to P2_0, and P2_1\n"
 	        "File: %s\n"
 	        "Compiled: %s, %s\n\n",
 	        __FILE__, __DATE__, __TIME__);
 	        
-	      /*
+	      
 	printf( "ÉÍÍÍÍÍÍÍÍÍÍÍÍËÍÍÍÍÍÍÍÍÍÍÍÍ»\n" );
     printf( "º Vrms Ref   º            º\n" );
     printf( "ÌÍÍÍÍÍÍÍÍÍÍÍÍÎÍÍÍÍÍÍÍÍÍÍÍÍ¹\n" );
@@ -224,10 +226,10 @@ void main (void)
     printf( "ÌÍÍÍÍÍÍÍÍÍÍÍÍÎÍÍÍÍÍÍÍÍÍÍÍÍ¹\n" );
     printf( "º Frequency  º            º\n" );
     printf( "ÈÍÍÍÍÍÍÍÍÍÍÍÍÊÍÍÍÍÍÍÍÍÍÍÍÍ¼\n" );
-    */
     
-	//1. Measure half period of ref signal using timer 0
-	TL0=0; 
+    while(1){
+		//1. Measure half period of ref signal using timer 0
+		TL0=0; 
 		TH0=0;
 		TF0=0;
 		overflow_count=0;
@@ -254,94 +256,93 @@ void main (void)
 		TR0=0; // Stop timer 0, the 24-bit number [overflow_count-TH0-TL0] has the period!
 		period=(overflow_count*65536.0+TH0*256.0+TL0)*(12.0/SYSCLK)*2;
 		// Send the period to the serial port
-	printf( "period=%.8f" , period);
-	frequency = 1.0/period;
-	printf(" frequency = %.8f\n", frequency);
-	
-	
-	/*
-	//2. wait for zero cross of ref
-	while (refZero==1); //Wait for the signal to be zero
-	while (refZero==0); //Wait for the signal to be one
-	while (refZero==1); //Wait for the signal to be zero
-	//wait period/4
-	QuarterPeriod = period/4;
-	waitms(QuarterPeriod);
-	//measure peak voltage of reference
-	*/
-	AD0BUSY = 1;
-	while(AD0BUSY);
-	
-		printf("\x1B[6;1H"); // ANSI escape sequence: move to row 6, column 1
-
-		for(j=0; j<NUM_INS; j++)
+		printf( "period=%.8f\n" , period);
+		frequency = 1.0/period;
+		printf(" frequency = %.8f\n", frequency);
+		/*
+		
+	for(j=0; j<NUM_INS; j++)
 		{
 			AD0BUSY = 1; // Start ADC 0 conversion to measure previously selected input
 			
-			// Select next channel while ADC0 is busy
-			if (j==0)
-			{
+			if(j == 0){
+				AMX0P=LQFP32_MUX_P2_0; // ref voltage
+				while (AD0BUSY); // Wait for conversion to complete
+				v = ((ADC0L+(ADC0H*0x100))*VDD)/1023.0; // Read 0-1023 value in ADC0 and convert to volts
+				printf( GOTO_YX , 7, 19);
+    			printf( FORE_BACK , COLOR_MAGENTA, COLOR_WHITE );
+				printf("v0=%5.3f ", v/1.4142);
+			}
+			
+			if(j==1){
+				AMX0P=LQFP32_MUX_P2_1; // test voltage
+				while (AD0BUSY); // Wait for conversion to complete
+				v = ((ADC0L+(ADC0H*0x100))*VDD)/1023.0; // Read 0-1023 value in ADC0 and convert to volts
+				printf( GOTO_YX , 9, 19);
+    			printf( FORE_BACK , COLOR_MAGENTA, COLOR_WHITE );
+				printf("v1=%5.3f ", v/1.4142); // test voltage
+	
+			}
+		}
+*/
+	
+		AD0BUSY = 1;
+		while(AD0BUSY);
+		
+	printf("\x1B[6;1H"); // ANSI escape sequence: move to row 6, column 1
+	
+		//2. wait for zero cross of ref
+		while (refZero==1); //Wait for the signal to be zero
+		while (refZero==0); //Wait for the signal to be one
+		while (refZero==1); //Wait for the signal to be zero
+		//wait period/4
+		QuarterPeriod = period/4;
+		waitms(QuarterPeriod);
+		//measure peak voltage of reference
+	
+	
+		printf("\x1B[6;1H"); // ANSI escape sequence: move to row 6, column 1
+
+	
+			AD0BUSY = 1; // Start ADC 0 conversion to measure previously selected input
+			
 				AMX0P=LQFP32_MUX_P2_0;
 				while (AD0BUSY); // Wait for conversion to complete
 				v = ((ADC0L+(ADC0H*0x100))*VDD)/1023.0; // Read 0-1023 value in ADC0 and convert to volts
-				printf("V0peak = %.3f", v);
+				//printf( GOTO_YX , 7, 19);
+				printf( FORE_BACK , COLOR_MAGENTA, COLOR_WHITE );
+				printf("V0peak = %.3fV", v);
 				V0peak = v;
 			
-			}
-			
-			if (j==1)
-			{
-				AMX0P=LQFP32_MUX_P2_1;
-				while (AD0BUSY); // Wait for conversion to complete
-				v = ((ADC0L+(ADC0H*0x100))*VDD)/1023.0; // Read 0-1023 value in ADC0 and convert to volts
-				V1peak = v;
-			}
-			}
-		
-	/*
+	
+	
 	//3. wait for zero cross of test
 	while (testZero==1); //Wait for the signal to be zero
 	while (testZero==0); //Wait for the signal to be one
 	while (testZero==1); //Wait for the signal to be zero
+	QuarterPeriod = period/4;
 	waitms(QuarterPeriod);
 	//now want to measure peak voltage of the test
-		printf("\x1B[6;1H"); // ANSI escape sequence: move to row 6, column 1
+	printf("\x1B[6;1H"); // ANSI escape sequence: move to row 6, column 1
+	
 
-		for(j=0; j<NUM_INS; j++)
-		{
-			AD0BUSY = 1; // Start ADC 0 conversion to measure previously selected input
-			
-			// Select next channel while ADC0 is busy
-			switch(j)
-			{
-				case 0:
-					AMX0P=LQFP32_MUX_P2_0;
-				break;
-				case 1:
-					AMX0P=LQFP32_MUX_P2_1;
-				break;
-			}
-			
-			while (AD0BUSY); // Wait for conversion to complete
-			v = ((ADC0L+(ADC0H*0x100))*VDD)/1023.0; // Read 0-1023 value in ADC0 and convert to volts
-			
-			// Display measured values
-			switch(j)
-			{
-				case 0:
-					printf("V0=%5.3fV, ", v);
-				break;
-				case 1:
-					printf("V1=%5.3fV, ", v);
-					V1peak = v;
-				break;
-			}
-
-		}
-		printf("\x1B[K"); // ANSI escape sequence: Clear to end of line
-		waitms(100);  // Wait 100ms before next round of measurements.
-	 
-	*/
+	
+	AD0BUSY = 1;
+	
+				AMX0P=LQFP32_MUX_P2_2;
+				while (AD0BUSY); // Wait for conversion to complete
+				v = ((ADC0L+(ADC0H*0x100))*VDD)/1023.0; // Read 0-1023 value in ADC0 and convert to volts
+				//printf( GOTO_YX , 9, 19);
+				printf( FORE_BACK , COLOR_MAGENTA, COLOR_WHITE );
+				if(v!=0){
+				printf("V1peak = %.3fV", v);
+				V1peak = v;
+				}
+	
+	
+		
+	
+	
 	//4. measure time difference between zero cross of both signals
 	 TL0=0; 
 		TH0=0;
@@ -426,7 +427,10 @@ printf("frequency = %.3f\n", frequency);
     printf( GOTO_YX , 8, 18);
     printf( FORE_BACK , COLOR_MAGENTA, COLOR_WHITE );
     printf("%7.3f", frequency);
+    
     */
+    waitms(100);
 }	
+}
 
 
