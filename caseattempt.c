@@ -159,7 +159,7 @@ void TIMER0_Init(void)
 
 
 
-#define VDD      3.325 // The measured value of VDD in volts
+#define VDD      5 // The measured value of VDD in volts
 #define NUM_INS  2
 
 void main (void)
@@ -170,6 +170,8 @@ void main (void)
   float period;
   float halfperiod;
   float phase;
+  float refRMS = 0;
+  float testRMS = 0;
     						
 	PORT_Init();     // Initialize Port I/O
 	TIMER0_Init();
@@ -260,14 +262,22 @@ void main (void)
 		  	switch(j)
 		  	{
 			  	case 0:
-			  	    printf( GOTO_YX , 7, 19);
+			  	    printf( GOTO_YX , 8, 19);
     			    printf( FORE_BACK , COLOR_GREEN, COLOR_WHITE );
 				      printf("%5.3f  ",  v/1.41421356); // ref RMS voltage
+				      refRMS = v/1.41421356;
+				      printf( GOTO_YX , 10, 19);
+    		    	  printf( FORE_BACK , COLOR_MAGENTA, COLOR_WHITE );
+				      printf("%5.3f", testRMS); // test RMS voltage
 				  break;
 				  case 1:
-				      printf( GOTO_YX , 9, 19);
-    		    	printf( FORE_BACK , COLOR_GREEN, COLOR_WHITE );
+				      printf( GOTO_YX , 10, 19);
+    		    	printf( FORE_BACK , COLOR_MAGENTA, COLOR_WHITE );
 				      printf("%5.3f", v/1.41421356); // test RMS voltage
+				      testRMS = v/1.41421356;
+				      printf( GOTO_YX , 8, 19);
+    			    printf( FORE_BACK , COLOR_GREEN, COLOR_WHITE );
+				      printf("%5.3f  ",  refRMS); // ref RMS voltage
 			  	break;
 			  }
 		}
@@ -317,13 +327,13 @@ void main (void)
             
         
   
-  printf( GOTO_YX , 11, 17);
+  printf( GOTO_YX , 12, 17);
   printf( FORE_BACK , COLOR_GREEN, COLOR_WHITE );
   printf("%5.3f ",phase);
-  printf( GOTO_YX , 13, 18);
-  printf( FORE_BACK , COLOR_GREEN, COLOR_WHITE );
+  printf( GOTO_YX , 14, 17);
+  printf( FORE_BACK , COLOR_MAGENTA, COLOR_WHITE );
   if(1/period < 1000 )
-  printf("period=%5.6f frequency=%5.6f", period, 1/period);
+  printf("%5.6f", 1/period);
   printf("\x1B[K");
   waitms(1000);  // Wait 100ms before next round of measurements.
 	}  
