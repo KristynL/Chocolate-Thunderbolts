@@ -159,7 +159,7 @@ void TIMER0_Init(void)
 
 
 
-#define VDD      3.325 // The measured value of VDD in volts
+#define VDD      5 // The measured value of VDD in volts
 #define NUM_INS  2
 
 void main (void)
@@ -170,9 +170,8 @@ void main (void)
   float period;
   float halfperiod;
   float phase;
-  float refRMS =0;
-  float testRMS =0;
- 
+  float refRMS = 0;
+  float testRMS = 0;
     						
 	PORT_Init();     // Initialize Port I/O
 	TIMER0_Init();
@@ -238,7 +237,11 @@ void main (void)
 
 	while(1)
 	{
-		
+	
+		while(REF_ZERO!=1);
+  		while(REF_ZERO!=0);
+  		waitms(halfperiod/2);
+		 
 		printf("\x1B[6;1H"); // ANSI escape sequence: move to row 6, column 1
 
 		for(j=0; j<NUM_INS; j++)
@@ -249,6 +252,7 @@ void main (void)
 		  	switch(j)
 			  {
 				    case 0:
+				    
 					    AMX0P=LQFP32_MUX_P2_0;    // input ref voltage
 				    break;
 				    case 1:
@@ -263,16 +267,58 @@ void main (void)
 		  	switch(j)
 		  	{
 			  	case 0:
-			  		refRMS = v/1.41421356;
-			  	    /*printf( GOTO_YX , 7, 19);
+			  	    printf( GOTO_YX , 8, 19);
     			    printf( FORE_BACK , COLOR_GREEN, COLOR_WHITE );
-				    printf("%5.3f  ",  v/1.41421356); // ref RMS voltage*/
+				    printf("%5.3f  ",  v/1.41421356); // ref RMS voltage
+				    refRMS = v/1.41421356;
 				break;
 				case 1:
-				  	testRMS = v/1.41421356;
-				    /*printf( GOTO_YX , 9, 19);
-    		    	printf( FORE_BACK , COLOR_GREEN, COLOR_WHITE );
-				    printf("%5.3f", v/1.41421356); // test RMS voltage*/
+					printf( GOTO_YX , 8, 19);
+    			    printf( FORE_BACK , COLOR_GREEN, COLOR_WHITE );
+				    printf("%5.3f  ",  refRMS);
+			  	break;
+			  }
+		}
+		
+		while(TEST_ZERO!=1);
+  		while(TEST_ZERO!=0);
+  		waitms(halfperiod/2);
+		 
+		printf("\x1B[6;1H"); // ANSI escape sequence: move to row 6, column 1
+
+		for(j=0; j<NUM_INS; j++)
+		{
+			  AD0BUSY = 1; // Start ADC 0 conversion to measure previously selected input
+			
+			  // Select next channel while ADC0 is busy
+		  	switch(j)
+			  {
+				    case 0:
+				    
+					    AMX0P=LQFP32_MUX_P2_0;    // input ref voltage
+				    break;
+				    case 1:
+					    AMX0P=LQFP32_MUX_P2_2;    //input test voltage
+				    break;
+			  }
+			
+			  while (AD0BUSY); // Wait for conversion to complete
+		  	v = ((ADC0L+(ADC0H*0x100))*VDD)/1023.0; // Read 0-1023 value in ADC0 and convert to volts
+			
+			  // Display measured values
+		  	switch(j)
+		  	{
+			  	case 0:
+			  		printf( GOTO_YX , 8, 19);
+    			    printf( FORE_BACK , COLOR_GREEN, COLOR_WHITE );
+				    printf("%5.3f  ",  refRMS);
+			  	    
+				  break;
+				  case 1:
+				      printf( GOTO_YX , 10, 19);
+    		    	printf( FORE_BACK , COLOR_MAGENTA, COLOR_WHITE );
+				      printf("%5.3f", v/1.41421356); // test RMS voltage
+				      testRMS = v/1.41421356;
 			  	break;
 			  }
 		}
@@ -322,23 +368,15 @@ void main (void)
             
         
   
-  printf( GOTO_YX , 7, 19);
-  printf( FORE_BACK , COLOR_GREEN, COLOR_WHITE );
-  printf("%5.3f  ",  refRMS); // ref RMS voltage
-  printf( GOTO_YX , 9, 19);
-  printf( FORE_BACK , COLOR_GREEN, COLOR_WHITE );
-  printf("%5.3f  ",  testRMS); // test RMS voltage*/
-  printf( GOTO_YX , 11, 17);
+  printf( GOTO_YX , 12, 17);
   printf( FORE_BACK , COLOR_GREEN, COLOR_WHITE );
   printf("%5.3f ",phase);
- 
- 
+  printf( GOTO_YX , 14, 18);
+  printf( FORE_BACK , COLOR_MAGENTA, COLOR_WHITE );
   if(1/period < 1000 )
-    printf( GOTO_YX , 13, 18);
-  printf( FORE_BACK , COLOR_GREEN, COLOR_WHITE );
-  printf("%5.6f ", 1/period);
+  printf("%5.3f", 1/period);
   printf("\x1B[K");
-  waitms(100);  // Wait 100ms before next round of measurements.
+  waitms(1000);  // Wait 100ms before next round of measurements.
 	}  
 }	
 
