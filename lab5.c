@@ -1,30 +1,23 @@
-
-// C8051F381_ADC_multiple_inputs.c:  Shows how to use the 10-bit ADC and the
-// multiplexer.  This program measures the voltages applied to pins P2.0 to P2.3.
-//
-// (c) 2008-2014, Jesus Calvino-Fraga
-//
+// phasor.c: Impliments a Phasor Voltmeter
+// Uses the 10-bit ADC on the f38x microcontroller and the
+// multiplexer to measure input Vpeaks.  
+// This program measures the peak voltages applied to pins P2.1 to P2.2 
+// and the zero cross waves applied to P0.1 and P1.0
+// Prints results to the hyperterminal
 // ~C51~ 
-#include <math.h>
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <c8051f38x.h>
-
-#define pi 3.14159265
-#define MHZ 1000000L
-#define SYSCLK 48000000L 
-//#define SYSCLK (24*MHZ)
-#define BAUDRATE 115200L
-#define VDD      5.15   // The measured value of VDD in volts
-#define NUM_INS  2
+#include <string.h>
 
 // ANSI colors
 #define	COLOR_BLACK		0
 #define	COLOR_RED		1
 #define	COLOR_GREEN		2
-#define	COLOR_YELLOW		3
+#define	COLOR_YELLOW	3
 #define	COLOR_BLUE		4
-#define	COLOR_MAGENTA		5
+#define	COLOR_MAGENTA	5
 #define	COLOR_CYAN		6
 #define	COLOR_WHITE		7
 
@@ -40,13 +33,18 @@
 #define FORE_BACK "\x1B[0;3%d;4%dm"
 #define FONT_SELECT "\x1B[%dm"
 
-//define pins
-//#define onoff P0_0
-#define refZero P0_1		//pin to input ref zero cross signal
-#define testZero P0_0		//pin to input test zero cross signal
+#define MHZ 1000000L
+#define SYSCLK (24*MHZ)
+#define BAUDRATE 115200L
+
+
+#define BUTTON P1_0
+#define REF_ZERO P0_1    // pin to input ref zero cross signal
+#define TEST_ZERO P0_0   // pin to input test zero cross signal
 
 unsigned char overflow_count;
 
+//void convert_ascii(char*, float, unsigned int);
 
 char _c51_external_startup (void)
 {
@@ -63,7 +61,6 @@ char _c51_external_startup (void)
 	#endif
 	OSCICN |= 0x03; // Configure internal oscillator for its maximum frequency
 	
-	//ADC Initialization
 	// Configure P2.0 to P2.3 as analog inputs
 	P2MDIN &= 0b_1111_0000; // P2.0 to P2.3
 	P2SKIP |= 0b_0000_1111; // Skip Crossbar decoding for these pins
@@ -114,34 +111,17 @@ char _c51_external_startup (void)
 	return 0;
 }
 
-
 void PORT_Init (void)
 {
-	P0MDOUT |= 0x10; // Enable UTX as push-pull output
-	XBR0     = 0x01; // Enable UART on P0.4(TX) and P0.5(RX)                     
-	XBR1     = 0x40; // Enable crossbar and weak pull-ups
+	// P0MDOUT |= 0x10; // Enable UART TX as push-pull output	
+	P0MDOUT|=0x10; // Enable Uart TX as push-pull output
+	P1MDOUT|=0b_1111_1111;
+	// P2MDOUT|=0b_1111_1111; // being used for ADC
+	P3MDOUT|=0b_0000_0011;
+	XBR0=0b_0000_0001; // Enable UART on P0.4(TX) and P0.5(RX)                    
+	XBR1=0b_0101_0000; // Enable crossbar.  Enable T0 input.
+	XBR2=0b_0000_0000;
 }
-
-void SYSCLK_Init (void)
-{
-	CLKSEL|=0b_0000_0011; // SYSCLK derived from Internal HF Osc / 1.
-	OSCICN |= 0x03;   // Configure internal oscillator for its maximum 
-	RSTSRC  = 0x04;   // Enable missing clock detector
-}
- 
-void UART0_Init (void)
-{
-	SCON0 = 0x10;
-	TH1 = 0x10000-((SYSCLK/BAUDRATE)/2L);
-	CKCON &= ~0x0B; // T1M = 1; SCA1:0 = xx
-	CKCON |=  0x08;
-	TL1 = TH1;      // Init Timer1
-	TMOD &= ~0xf0;  // TMOD: timer 1 in 8-bit auto-reload
-	TMOD |=  0x20;                       
-	TR1 = 1; // START Timer1
-	TI = 1;  // Indicate TX0 ready
-}
- 
 
 // Uses Timer3 to delay <us> micro-seconds. 
 void Timer3us(unsigned char us)
@@ -163,7 +143,6 @@ void Timer3us(unsigned char us)
 	TMR3CN = 0 ;                   // Stop Timer3 and clear overflow flag
 }
 
-
 void waitms (unsigned int ms)
 {
 	unsigned int j;
@@ -179,44 +158,47 @@ void TIMER0_Init(void)
 	TR0=0; // Stop Timer/Counter 0
 }
 
+
+
+#define VDD      3.325 // The measured value of VDD in volts
+#define NUM_INS  2
+#define DESIGNS  6
+
 void main (void)
 {
-
 	float v;
-	//unsigned char j;
-	float QuarterPeriod;
-	
-	unsigned int time;
-	unsigned int time0;
-	unsigned int time1;
-	unsigned int timediff;
-	float phase;
-	
-	float V0peak = 0;
-	float V1peak = 0;
-	float V0rms;
-	float V1rms;
-	
-	float period;
-	float frequency;
-	
+	float refRMS = 0;
+	float testRMS = 0;
+	//unsigned int i;
+	unsigned char j;
+    float time;
+    float period;
+    float phase;
+    //char num_string[8];
+    //char line1[17];
+    //char line2[17];
+    unsigned int design = 0;
+    
+    unsigned int colours[] = {COLOR_MAGENTA, COLOR_GREEN, COLOR_BLUE, COLOR_RED, COLOR_YELLOW, COLOR_CYAN};
+    
+    //line1[16] = '\0';
+    //line2[16] = '\0';
+    //num_string[7] = '\0';
+    						
+	PORT_Init();     // Initialize Port I/O
+	TIMER0_Init();
+	//LCD_4BIT();
+	//LCDprint("B", 1, 1);
 	
 	printf("\x1b[2J"); // Clear screen using ANSI escape sequence.
-	PCA0MD &= ~0x40; // WDTE = 0 (clear watchdog timer enable)
-	PORT_Init();     // Initialize Port I/O
-	SYSCLK_Init ();  // Initialize Oscillator
-	UART0_Init();    // Initialize UART0
-	TIMER0_Init();
 	printf( FORE_BACK , COLOR_BLACK, COLOR_WHITE );
 	printf( CLEAR_SCREEN );
-	
 	printf ("Phasor Voltmeter\n"
-	        "Apply zero cross to P0_1, P0_2; Vpeak to P2_0, and P2_1\n"
+	        "Apply zero cross to P0_1, P0_0; Vpeak to P2_1, P2_2\n"
 	        "File: %s\n"
 	        "Compiled: %s, %s\n\n",
 	        __FILE__, __DATE__, __TIME__);
-	        
-	      
+	printf( FORE_BACK, COLOR_BLACK, COLOR_WHITE );
 	printf( "ÉÍÍÍÍÍÍÍÍÍÍÍÍËÍÍÍÍÍÍÍÍÍÍÍÍ»\n" );
     printf( "º Vrms Ref   º            º\n" );
     printf( "ÌÍÍÍÍÍÍÍÍÍÍÍÍÎÍÍÍÍÍÍÍÍÍÍÍÍ¹\n" );
@@ -227,41 +209,26 @@ void main (void)
     printf( "º Frequency  º            º\n" );
     printf( "ÈÍÍÍÍÍÍÍÍÍÍÍÍÊÍÍÍÍÍÍÍÍÍÍÍÍ¼\n" );
     
-    while(1){
-		//1. Measure half period of ref signal using timer 0
-		TL0=0; 
-		TH0=0;
-		TF0=0;
-		overflow_count=0;
-		
-		while(refZero!=0); // Wait for the signal to be zero
-		while(refZero!=1); // Wait for the signal to be one
-		TR0=1; // Start the timer
-		while(refZero!=0) // Wait for the signal to be zero
-		{
-			if(TF0==1) // Did the 16-bit timer overflow?
-			{
-				TF0=0;
-				overflow_count++;
-			}
+
+
+    
+	// Start the ADC in order to select the first channel.
+	// Since we don't know how the input multiplexer was set up,
+	// this initial conversion needs to be discarded.
+	AD0BUSY=1;
+	while (AD0BUSY); // Wait for conversion to complete
+
+	while(1)
+	{
+		if(!BUTTON){
+			while(!BUTTON);
+			design++;
+			if(design >= DESIGNS) design = 0;
 		}
-		while(refZero!=1) // Wait for the signal to be one
-		{
-			if(TF0==1) // Did the 16-bit timer overflow?
-			{
-				TF0=0;
-				overflow_count++;
-			}
-		}
-		TR0=0; // Stop timer 0, the 24-bit number [overflow_count-TH0-TL0] has the period!
-		period=(overflow_count*65536.0+TH0*256.0+TL0)*(12.0/SYSCLK)*2;
-		// Send the period to the serial port
-		printf( "period=%.8f\n" , period);
-		frequency = 1.0/period;
-		printf(" frequency = %.8f\n", frequency);
-		/*
 		
-	for(j=0; j<NUM_INS; j++)
+		printf("\x1B[6;1H"); // ANSI escape sequence: move to row 6, column 1
+
+		for(j=0; j<NUM_INS; j++)
 		{
 			AD0BUSY = 1; // Start ADC 0 conversion to measure previously selected input
 			
@@ -269,92 +236,46 @@ void main (void)
 				AMX0P=LQFP32_MUX_P2_0; // ref voltage
 				while (AD0BUSY); // Wait for conversion to complete
 				v = ((ADC0L+(ADC0H*0x100))*VDD)/1023.0; // Read 0-1023 value in ADC0 and convert to volts
-				printf( GOTO_YX , 7, 19);
-    			printf( FORE_BACK , COLOR_MAGENTA, COLOR_WHITE );
-				printf("v0=%5.3f ", v/1.4142);
+				//refRMS = v/1.41421356;
+				printf( GOTO_YX , 9, 19);
+    			printf( FORE_BACK , colours[design], COLOR_WHITE );
+				printf("refpeak=%5.3f refrms=%5.3F", v, v/1.4142);
+				/*convert_ascii(num_string, v/1.4142, 5);
+				for(i = 0; i < 5; i++){
+					line1[i+10] = num_string[i];
+				}
+				line1[15] = 'V';*/
 			}
 			
 			if(j==1){
-				AMX0P=LQFP32_MUX_P2_1; // test voltage
+				AMX0P=LQFP32_MUX_P2_2; // test voltage
 				while (AD0BUSY); // Wait for conversion to complete
 				v = ((ADC0L+(ADC0H*0x100))*VDD)/1023.0; // Read 0-1023 value in ADC0 and convert to volts
-				printf( GOTO_YX , 9, 19);
-    			printf( FORE_BACK , COLOR_MAGENTA, COLOR_WHITE );
-				printf("v1=%5.3f ", v/1.4142); // test voltage
-	
-			}
-		}
-*/
-	
-		AD0BUSY = 1;
-		while(AD0BUSY);
-		
-	printf("\x1B[6;1H"); // ANSI escape sequence: move to row 6, column 1
-	
-		//2. wait for zero cross of ref
-		while (refZero==1); //Wait for the signal to be zero
-		while (refZero==0); //Wait for the signal to be one
-		while (refZero==1); //Wait for the signal to be zero
-		//wait period/4
-		QuarterPeriod = period/4;
-		waitms(QuarterPeriod);
-		//measure peak voltage of reference
-	
-	
-		printf("\x1B[6;1H"); // ANSI escape sequence: move to row 6, column 1
-
-	
-			AD0BUSY = 1; // Start ADC 0 conversion to measure previously selected input
-			
-				AMX0P=LQFP32_MUX_P2_0;
-				while (AD0BUSY); // Wait for conversion to complete
-				v = ((ADC0L+(ADC0H*0x100))*VDD)/1023.0; // Read 0-1023 value in ADC0 and convert to volts
-				//printf( GOTO_YX , 7, 19);
-				printf( FORE_BACK , COLOR_MAGENTA, COLOR_WHITE );
-				printf("V0peak = %.3fV", v);
-				V0peak = v;
-			
-	
-	
-	//3. wait for zero cross of test
-	while (testZero==1); //Wait for the signal to be zero
-	while (testZero==0); //Wait for the signal to be one
-	while (testZero==1); //Wait for the signal to be zero
-	QuarterPeriod = period/4;
-	waitms(QuarterPeriod);
-	//now want to measure peak voltage of the test
-	printf("\x1B[6;1H"); // ANSI escape sequence: move to row 6, column 1
-	
-
-	
-	AD0BUSY = 1;
-	
-				AMX0P=LQFP32_MUX_P2_2;
-				while (AD0BUSY); // Wait for conversion to complete
-				v = ((ADC0L+(ADC0H*0x100))*VDD)/1023.0; // Read 0-1023 value in ADC0 and convert to volts
-				//printf( GOTO_YX , 9, 19);
-				printf( FORE_BACK , COLOR_MAGENTA, COLOR_WHITE );
-				if(v!=0){
-				printf("V1peak = %.3fV", v);
-				V1peak = v;
+				//testRMS = v/1.41421356;
+				printf( GOTO_YX , 7, 19);
+    			printf( FORE_BACK , colours[design], COLOR_WHITE );
+				printf("testpeak=%5.3f  testrms=%5.3f", v, v/1.4142); // test voltage
+				/*convert_ascii(num_string, v/1.4142, 5);
+				for(i = 0; i < 5; i++){
+					line2[i+10] = num_string[i];
 				}
-	
-	
-		
-	
-	
-	//4. measure time difference between zero cross of both signals
-	 TL0=0; 
+				line2[15] = 'V';*/
+			}
+
+		}
+        
+        // measure phase by measuring change in zero time 
+        TL0=0; 
 		TH0=0;
 		TF0=0;
 		overflow_count=0;
-        while(testZero != 0);
-        while(testZero != 1);
+        while(TEST_ZERO != 0);
+        while(TEST_ZERO != 1);
         TR0 = 1; // start timer 0
         
-        if(refZero == 1) // case where ref is at 1
+        if(REF_ZERO == 1) // case where ref is at 1
         {
-            while(refZero == 1)
+            while(REF_ZERO == 1)
             {
                 if(TF0 == 1)
                 {
@@ -366,7 +287,7 @@ void main (void)
         
         else // case where ref is at 0
         {
-            while(refZero == 0)
+            while(REF_ZERO == 0)
             {
                 if(TF0 == 1)
                 {
@@ -377,60 +298,87 @@ void main (void)
         }
         
         TR0 = 0; // stop the counter
-        time = (overflow_count * 65536.0 + TH0 * 256.0 + TL0) * (12.0 / SYSCLK);
-
-while (refZero == 1);
-time0 = time;
-while (testZero == 1);
-time1 = time;
-timediff = time0-time1;
-
-//5. convert peak ADC values to RMS and display
-V1rms = V1peak/1.41421356;
-V0rms = V0peak/1.41421356;
-
-printf("\nV0peak = %.3f\n", V0peak);
-printf("V1peak = %.3f\n", V1peak);
-printf("V0rms = %.3f\n", V0rms);
-printf("V1rms = %.3f\n", V1rms);
-
-//convert time diff between zero cross of both signals to degrees
-phase = timediff*360/period;
-printf("phase = %0.3f\n", phase);
-
-//convert period to frequency and display
-frequency = 1/period;
-printf("frequency = %.3f\n", frequency);
-/*
-    printf( CLEAR_SCREEN );
-    printf( FORE_BACK , COLOR_BLACK, COLOR_WHITE );
-
-    printf( "ÉÍÍÍÍÍÍÍÍÍÍÍÍËÍÍÍÍÍÍÍÍÍÍÍÍ»\n" );
-    printf( "º Vrms Ref   º            º\n" );
-    printf( "ÌÍÍÍÍÍÍÍÍÍÍÍÍÎÍÍÍÍÍÍÍÍÍÍÍÍ¹\n" );
-    printf( "º Vrms Test  º            º\n" );
-    printf( "ÌÍÍÍÍÍÍÍÍÍÍÍÍÎÍÍÍÍÍÍÍÍÍÍÍÍ¹\n" );
-    printf( "º Phase      º            º\n" );
-    printf( "ÌÍÍÍÍÍÍÍÍÍÍÍÍÎÍÍÍÍÍÍÍÍÍÍÍÍ¹\n" );
-    printf( "º Frequency  º            º\n" );
-    printf( "ÈÍÍÍÍÍÍÍÍÍÍÍÍÊÍÍÍÍÍÍÍÍÍÍÍÍ¼\n" );
-    
-    printf( GOTO_YX , 2, 18);
-    printf( FORE_BACK , COLOR_RED, COLOR_WHITE );
-    printf("%6.3f", V0rms);
-    printf( GOTO_YX , 4, 18);
-    printf( FORE_BACK , COLOR_GREEN, COLOR_WHITE );
-    printf("%6.3f", V1rms);
-    printf( GOTO_YX , 6, 18);
-    printf( FORE_BACK , COLOR_BLUE, COLOR_WHITE );
-    printf("%7.3f", phase);
-    printf( GOTO_YX , 8, 18);
-    printf( FORE_BACK , COLOR_MAGENTA, COLOR_WHITE );
-    printf("%7.3f", frequency);
-    
-    */
-    waitms(100);
+        time = (overflow_count * 65536.0 + TH0 * 256.0 + TL0) * (12.0 / SYSCLK); 
+        
+        // measure total period
+        TL0=0; 
+		TH0=0;
+		TF0=0;
+		overflow_count=0;
+		
+		while(REF_ZERO!=0); // Wait for the signal to be zero
+		while(REF_ZERO!=1); // Wait for the signal to be one
+		TR0=1; // Start the timer
+		while(REF_ZERO!=0) // Wait for the signal to be zero
+		{
+			if(TF0==1) // Did the 16-bit timer overflow?
+			{
+				TF0=0;
+				overflow_count++;
+			}
+		}
+		while(REF_ZERO!=1) // Wait for the signal to be one
+		{
+			if(TF0==1) // Did the 16-bit timer overflow?
+			{
+				TF0=0;
+				overflow_count++;
+			}
+		}
+		TR0=0; // Stop timer 0, the 24-bit number [overflow_count-TH0-TL0] has the period!
+		period=(overflow_count*65536.0+TH0*256.0+TL0)*(12.0/SYSCLK)*2;
+		/*convert_ascii(num_string, 1.0/period, 6);
+		for(i = 0; i<6; i++){
+			line2[i] = num_string[i];
+		}
+		line2[6] = 'H';
+		line2[7] = 'z';
+		line2[8] = ' ';
+		line2[9] = ' ';*/
+        
+        if(time > (period / 4.0)) // negative phase
+        {
+            phase = (-((period / 2.0) - time) / period ) * 360.0;
+			/*line1[0]='-';
+			convert_ascii(num_string, -1*phase, 7);
+			for(i=1; i<8; i++){
+				line1[i] = num_string[i-1];
+			}
+			line1[8] = 'd';
+			line1[9] = ' ';*/
+        }
+        else
+        {
+            phase = (((period / 2.0) - time) / period ) * 360.0;
+            /*line1[0]=' ';
+			convert_ascii(num_string, phase, 7);
+			for(i=1; i<8; i++){
+				line1[i] = num_string[i-1];
+			}
+			line1[8] = 'd';
+			line1[9] = ' ';*/
+        }
+        
+        /*printf( GOTO_YX , 9, 19);
+    	printf( FORE_BACK , colours[design], COLOR_WHITE );
+		printf("%5.3f ", refRMS);	//ref voltage
+		printf( GOTO_YX , 7, 19);
+    	printf( FORE_BACK , colours[design], COLOR_WHITE );
+		printf("%5.3f  ", testRMS); // test voltage*/
+        printf( GOTO_YX , 11, 17);
+    	printf( FORE_BACK , colours[design], COLOR_WHITE );
+        printf("%5.3f ",phase);
+        printf( GOTO_YX , 13, 18);
+    	printf( FORE_BACK , colours[design], COLOR_WHITE );
+    	if(1/period < 1000 )
+        printf("period=%5.6f frequency=%5.6f", period, 1/period);
+        //printf("\n%5.6f ", period);
+        /*LCDprint(line1, 1, 0);
+        LCDprint(line2, 2, 0);*/
+        
+		waitms(1000);  // Wait 100ms before next round of measurements.
+	 }  
 }	
-}
+
 
 
