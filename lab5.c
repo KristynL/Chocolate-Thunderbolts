@@ -184,7 +184,7 @@ void main (void)
 
 	float v;
 	unsigned char j;
-	unsigned int QuarterPeriod;
+//	unsigned int QuarterPeriod;
 	unsigned int time;
 	unsigned int time0;
 	unsigned int time1;
@@ -279,36 +279,26 @@ void main (void)
 			AD0BUSY = 1; // Start ADC 0 conversion to measure previously selected input
 			
 			// Select next channel while ADC0 is busy
-			switch(j)
+			if (j==0)
 			{
-				case 0:
-					AMX0P=LQFP32_MUX_P2_0;
-				break;
-				case 1:
-					AMX0P=LQFP32_MUX_P2_1;
-				break;
+				AMX0P=LQFP32_MUX_P2_0;
+				while (AD0BUSY); // Wait for conversion to complete
+				v = ((ADC0L+(ADC0H*0x100))*VDD)/1023.0; // Read 0-1023 value in ADC0 and convert to volts
+				printf("V0peak = %.3f", v);
+				V0peak = v;
+			
 			}
 			
-			while (AD0BUSY); // Wait for conversion to complete
-			v = ((ADC0L+(ADC0H*0x100))*VDD)/1023.0; // Read 0-1023 value in ADC0 and convert to volts
-			
-			// Display measured values
-			switch(j)
+			if (j==1)
 			{
-				case 0:
-					printf("V0=%5.3fV, ", v);
-					V0peak = v;
-				break;
-				case 1:
-					printf("V1=%5.3fV, ", v);
-				break;
+				AMX0P=LQFP32_MUX_P2_1;
+				while (AD0BUSY); // Wait for conversion to complete
+				v = ((ADC0L+(ADC0H*0x100))*VDD)/1023.0; // Read 0-1023 value in ADC0 and convert to volts
+				V1peak = v;
 			}
-
-		}
-		printf("\x1B[K"); // ANSI escape sequence: Clear to end of line
-		waitms(100);  // Wait 100ms before next round of measurements.
-	 
-	
+			}
+		
+	/*
 	//3. wait for zero cross of test
 	while (testZero==1); //Wait for the signal to be zero
 	while (testZero==0); //Wait for the signal to be one
@@ -351,7 +341,7 @@ void main (void)
 		printf("\x1B[K"); // ANSI escape sequence: Clear to end of line
 		waitms(100);  // Wait 100ms before next round of measurements.
 	 
-	
+	*/
 	//4. measure time difference between zero cross of both signals
 	 TL0=0; 
 		TH0=0;
