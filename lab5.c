@@ -37,8 +37,10 @@
 #define SYSCLK (24*MHZ)
 #define BAUDRATE 115200L
 
+#define VDD      5 // The measured value of VDD in volts
+#define NUM_INS  2
 
-#define BUTTON P1_0
+
 #define REF_ZERO P0_1    // pin to input ref zero cross signal
 #define TEST_ZERO P0_0   // pin to input test zero cross signal
 
@@ -160,9 +162,7 @@ void TIMER0_Init(void)
 
 
 
-#define VDD      3.325 // The measured value of VDD in volts
-#define NUM_INS  2
-#define DESIGNS  6
+
 
 void main (void)
 {
@@ -174,22 +174,11 @@ void main (void)
     float time;
     float period;
     float phase;
-    //char num_string[8];
-    //char line1[17];
-    //char line2[17];
-    unsigned int design = 0;
-    
-    unsigned int colours[] = {COLOR_MAGENTA, COLOR_GREEN, COLOR_BLUE, COLOR_RED, COLOR_YELLOW, COLOR_CYAN};
-    
-    //line1[16] = '\0';
-    //line2[16] = '\0';
-    //num_string[7] = '\0';
+   
     						
 	PORT_Init();     // Initialize Port I/O
 	TIMER0_Init();
-	//LCD_4BIT();
-	//LCDprint("B", 1, 1);
-	
+
 	printf("\x1b[2J"); // Clear screen using ANSI escape sequence.
 	printf( FORE_BACK , COLOR_BLACK, COLOR_WHITE );
 	printf( CLEAR_SCREEN );
@@ -208,24 +197,12 @@ void main (void)
     printf( "ÌÍÍÍÍÍÍÍÍÍÍÍÍÎÍÍÍÍÍÍÍÍÍÍÍÍ¹\n" );
     printf( "º Frequency  º            º\n" );
     printf( "ÈÍÍÍÍÍÍÍÍÍÍÍÍÊÍÍÍÍÍÍÍÍÍÍÍÍ¼\n" );
-    
-
-
-    
-	// Start the ADC in order to select the first channel.
-	// Since we don't know how the input multiplexer was set up,
-	// this initial conversion needs to be discarded.
+  
 	AD0BUSY=1;
 	while (AD0BUSY); // Wait for conversion to complete
 
 	while(1)
 	{
-		if(!BUTTON){
-			while(!BUTTON);
-			design++;
-			if(design >= DESIGNS) design = 0;
-		}
-		
 		printf("\x1B[6;1H"); // ANSI escape sequence: move to row 6, column 1
 
 		for(j=0; j<NUM_INS; j++)
@@ -238,13 +215,9 @@ void main (void)
 				v = ((ADC0L+(ADC0H*0x100))*VDD)/1023.0; // Read 0-1023 value in ADC0 and convert to volts
 				//refRMS = v/1.41421356;
 				printf( GOTO_YX , 9, 19);
-    			printf( FORE_BACK , colours[design], COLOR_WHITE );
+    			printf( FORE_BACK , COLOR_MAGENTA, COLOR_WHITE );
 				printf("refpeak=%5.3f refrms=%5.3F", v, v/1.4142);
-				/*convert_ascii(num_string, v/1.4142, 5);
-				for(i = 0; i < 5; i++){
-					line1[i+10] = num_string[i];
-				}
-				line1[15] = 'V';*/
+			
 			}
 			
 			if(j==1){
@@ -253,18 +226,13 @@ void main (void)
 				v = ((ADC0L+(ADC0H*0x100))*VDD)/1023.0; // Read 0-1023 value in ADC0 and convert to volts
 				//testRMS = v/1.41421356;
 				printf( GOTO_YX , 7, 19);
-    			printf( FORE_BACK , colours[design], COLOR_WHITE );
+    			printf( FORE_BACK , COLOR_MAGENTA, COLOR_WHITE );
 				printf("testpeak=%5.3f  testrms=%5.3f", v, v/1.4142); // test voltage
-				/*convert_ascii(num_string, v/1.4142, 5);
-				for(i = 0; i < 5; i++){
-					line2[i+10] = num_string[i];
-				}
-				line2[15] = 'V';*/
 			}
 
 		}
         
-        // measure phase by measuring change in zero time 
+        // measure phase 
         TL0=0; 
 		TH0=0;
 		TF0=0;
@@ -327,55 +295,27 @@ void main (void)
 		}
 		TR0=0; // Stop timer 0, the 24-bit number [overflow_count-TH0-TL0] has the period!
 		period=(overflow_count*65536.0+TH0*256.0+TL0)*(12.0/SYSCLK)*2;
-		/*convert_ascii(num_string, 1.0/period, 6);
-		for(i = 0; i<6; i++){
-			line2[i] = num_string[i];
-		}
-		line2[6] = 'H';
-		line2[7] = 'z';
-		line2[8] = ' ';
-		line2[9] = ' ';*/
-        
+	
         if(time > (period / 4.0)) // negative phase
         {
             phase = (-((period / 2.0) - time) / period ) * 360.0;
-			/*line1[0]='-';
-			convert_ascii(num_string, -1*phase, 7);
-			for(i=1; i<8; i++){
-				line1[i] = num_string[i-1];
-			}
-			line1[8] = 'd';
-			line1[9] = ' ';*/
+		
         }
         else
         {
             phase = (((period / 2.0) - time) / period ) * 360.0;
-            /*line1[0]=' ';
-			convert_ascii(num_string, phase, 7);
-			for(i=1; i<8; i++){
-				line1[i] = num_string[i-1];
-			}
-			line1[8] = 'd';
-			line1[9] = ' ';*/
+         
         }
         
-        /*printf( GOTO_YX , 9, 19);
-    	printf( FORE_BACK , colours[design], COLOR_WHITE );
-		printf("%5.3f ", refRMS);	//ref voltage
-		printf( GOTO_YX , 7, 19);
-    	printf( FORE_BACK , colours[design], COLOR_WHITE );
-		printf("%5.3f  ", testRMS); // test voltage*/
+       
         printf( GOTO_YX , 11, 17);
-    	printf( FORE_BACK , colours[design], COLOR_WHITE );
+    	printf( FORE_BACK , COLOR_MAGENTA, COLOR_WHITE );
         printf("%5.3f ",phase);
         printf( GOTO_YX , 13, 18);
-    	printf( FORE_BACK , colours[design], COLOR_WHITE );
+    	printf( FORE_BACK , COLOR_MAGENTA, COLOR_WHITE );
     	if(1/period < 1000 )
         printf("period=%5.6f frequency=%5.6f", period, 1/period);
-        //printf("\n%5.6f ", period);
-        /*LCDprint(line1, 1, 0);
-        LCDprint(line2, 2, 0);*/
-        
+      
 		waitms(1000);  // Wait 100ms before next round of measurements.
 	 }  
 }	
